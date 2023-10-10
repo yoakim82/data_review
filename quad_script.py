@@ -2,15 +2,19 @@ import os
 import tkinter as tk
 from PIL import Image, ImageTk
 import colorpalette
+import pathlib
 
 class ImageRemovalApp:
     def __init__(self, root):
+        self.flaggedforDelete = []
         self.root = root
         self.root.title("Image Removal Tool")
 
         self.image_paths_rgb_bbox = []
         self.image_paths_segm = []
         self.image_paths_depth = []
+        self.image_paths_backgrounds = []
+        self.image_paths_rgb = []
 
         self.current_index = 0
         self.script_file_name = "delete_script.sh"  # Default script file name
@@ -33,41 +37,52 @@ class ImageRemovalApp:
                         dirname = os.path.split(root)[0]
                         self.image_paths_segm.append(os.path.join(dirname, 'out_segm', base))
                         self.image_paths_depth.append(os.path.join(dirname, 'out_depth', base))
+                        #self.image_paths_rgb.append(os.path.join(dirname, 'out_rgb', base))
+                        #self.image_paths_backgrounds.append(os.path.join(dirname, 'backgrounds/out_rgb', base))
 
     def load_images(self):
         self.images_rgb_bbox = [Image.open(file) for file in self.image_paths_rgb_bbox]
         self.images_segm = [Image.open(file) for file in self.image_paths_segm]
         self.images_depth = [Image.open(file) for file in self.image_paths_depth]
+        self.flaggedforDelete = [False for file in self.image_paths_rgb_bbox]
+        #self.images_rgb = [Image.open(file) for file in self.image_paths_rgb]
+        #self.images_backgrounds = [Image.open(file) for file in self.image_paths_backgrounds]
 
     def create_gui(self):
         self.upper_left_label = tk.Label(root)
         self.lower_left_label = tk.Label(root)
         self.bottom_right_label = tk.Label(root)
 
-        self.upper_left_label.grid(row=0, column=0)
-        self.lower_left_label.grid(row=1, column=0)
-        self.bottom_right_label.grid(row=1, column=1)
+        self.upper_left_label.grid(row=0, column=0, columnspan=2, rowspan=3)
+        self.lower_left_label.grid(row=3, column=0, columnspan=2, rowspan=2)
+        self.bottom_right_label.grid(row=3, column=2, columnspan=4, rowspan=2)
 
         self.next_button = tk.Button(root, text="Next", command=self.next_image)
         self.prev_button = tk.Button(root, text="Prev", command=self.prev_image)
 
         self.remove_button = tk.Button(root, text="Remove", command=self.remove_image)
         self.script_label = tk.Label(root, text="Script File Name:")
+        self.flagged_text = tk.Label(root, text="Flagged for deletion:")
+        self.flagged_label = tk.Label(root, text="False")
         self.script_entry = tk.Entry(root)
         self.script_entry.insert(0, self.script_file_name)
         self.update_script_button = tk.Button(root, text="Update Script", command=self.update_script)
 
-        self.next_button.grid(row=0, column=2, rowspan=1, columnspan=1)
-        self.prev_button.grid(row=0, column=1, rowspan=1, columnspan=1)
-        self.remove_button.grid(row=0, column=3, rowspan=1, columnspan=1)
-        self.script_label.grid(row=2, column=0, rowspan=1, columnspan=1)
-        self.script_entry.grid(row=2, column=1, rowspan=1, columnspan=1)
-        self.update_script_button.grid(row=2, column=2, rowspan=1, columnspan=1)
+        self.next_button.grid(row=0, column=3, rowspan=1, columnspan=1)
+        self.prev_button.grid(row=0, column=2, rowspan=1, columnspan=1)
+        self.remove_button.grid(row=0, column=4, rowspan=1, columnspan=1)
+        self.script_label.grid(row=1, column=2, rowspan=1, columnspan=1)
+        self.flagged_text.grid(row=2, column=2, rowspan=1, columnspan=1)
+        self.flagged_label.grid(row=2, column=3, rowspan=1, columnspan=1)
+
+        self.script_entry.grid(row=1, column=3, rowspan=1, columnspan=1)
+        self.update_script_button.grid(row=1, column=4, rowspan=1, columnspan=1)
 
         self.load_quadrant_images()
 
     def load_quadrant_images(self):
-        scale =3
+        self.flagged_label.config(text=str(self.flaggedforDelete[self.current_index]))
+        scale =2
         self.root.title(f"image {self.current_index}: {self.image_paths_rgb_bbox[self.current_index]}")
         img_format = (int(1920 / scale), int(1080 / scale))
         if self.current_index < len(self.image_paths_rgb_bbox):
@@ -81,6 +96,14 @@ class ImageRemovalApp:
             photo_segm = ImageTk.PhotoImage(transform_segm)
             self.lower_left_label.config(image=photo_segm)
             self.lower_left_label.image = photo_segm
+
+            # subtract the rgb image from the background image to see if there is a difference apart from the spawned objects
+            #img_diff = colorpalette.absolute_difference(self.images_rgb[self.current_index],
+            #                                            self.images_backgrounds[self.current_index])
+            #img_diff_resized = img_diff.resize(img_format, resample=Image.Resampling.NEAREST)
+            #photo_diff = ImageTk.PhotoImage(img_diff_resized)
+            #self.bottom_right_label.config(image=photo_diff)
+            #self.bottom_right_label.image = photo_diff
 
             image_depth = self.images_depth[self.current_index].resize(img_format)
             photo_depth = ImageTk.PhotoImage(image_depth)
@@ -103,21 +126,36 @@ class ImageRemovalApp:
 
     def remove_image(self):
         if self.current_index < len(self.image_paths_rgb_bbox):
-            file_name = os.path.basename(self.image_paths_rgb_bbox[self.current_index])
-            file_prefix = file_name.split('_')[0]
-            self.append_to_script(f"rm {file_prefix}*")
-            del self.image_paths_rgb_bbox[self.current_index]
-            del self.images_rgb_bbox[self.current_index]
-            del self.images_segm[self.current_index]
-            del self.images_depth[self.current_index]
+            file = self.image_paths_rgb_bbox[self.current_index]
+            file_name = os.path.basename(file)
+
+            dirname = os.path.dirname(file)
+            parent = os.path.dirname(dirname)
+
+            #self.append_to_script(f"find . -name \{file_name}.* -type f -delete")
+            #del self.image_paths_rgb_bbox[self.current_index]
+            #del self.images_rgb_bbox[self.current_index]
+            #del self.images_segm[self.current_index]
+            #del self.images_depth[self.current_index]
+            self.flaggedforDelete[self.current_index] = True
             self.load_quadrant_images()
 
     def append_to_script(self, command):
         with open(self.script_file_name, "a") as script_file:
             script_file.write(command + "\n")
 
+    def batch_add_deletions(self):
+        for i, file in enumerate(self.image_paths_rgb_bbox):
+            if self.flaggedforDelete[i]:
+                file = self.image_paths_rgb_bbox[i]
+                file_name = os.path.basename(file)
+
+                dirname = os.path.dirname(file)
+                self.append_to_script(f"find . -name \{file_name}.* -type f -delete")
+
     def update_script(self):
         self.script_file_name = self.script_entry.get()
+        self.batch_add_deletions()
 
 if __name__ == "__main__":
     root = tk.Tk()

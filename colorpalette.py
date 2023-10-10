@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageChops
 
 
 def transform(image):
@@ -20,6 +20,35 @@ def transform(image):
     return Image.fromarray(transformed_img)
 
 
+def absolute_difference(image1, image2):
+    """
+    Compute the pixelwise absolute difference between two RGBA PIL images.
+
+    Args:
+    image1 (PIL.Image.Image): The first input image.
+    image2 (PIL.Image.Image): The second input image.
+
+    Returns:
+    PIL.Image.Image: A new image representing the absolute difference.
+    """
+
+    # Ensure that both images have the same size and mode (RGBA)
+    if image1.size != image2.size or image1.mode != 'RGBA' or image2.mode != 'RGBA':
+        raise ValueError("Input images must have equal size and RGBA mode")
+
+    # Convert only the RGB channels of the images to NumPy arrays
+    img1_array = np.array(image1, dtype=int)[:, :, :3]
+    img2_array = np.array(image2, dtype=int)[:, :, :3]
+
+    # Compute the pixel-wise absolute difference (excluding the alpha channel)
+    sh = image1.size
+    #diff_array = np.zeros((sh[0], sh[1], 3), dtype=np.int16)
+    diff_array = np.abs(img1_array - img2_array)
+
+    # Convert the NumPy array back to a PIL image
+    diff_image = Image.fromarray(diff_array, 'RGB')
+
+    return diff_image
 
 
 
