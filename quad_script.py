@@ -19,13 +19,14 @@ class ImageRemovalApp:
         self.current_index = 0
         self.script_file_name = "delete_script.sh"  # Default script file name
 
-        self.load_image_paths()
+        self.load_image_paths(folder='new_batches')
         self.load_images()
 
         self.create_gui()
+        self.root.mainloop()
 
-    def load_image_paths(self):
-        for root, _, _ in os.walk('data'):
+    def load_image_paths(self, folder):
+        for root, _, _ in os.walk(folder):
             if 'out_rgb_bbox' in root:
                 files = os.listdir(root)
                 files = [os.path.join(root, f) for f in files]
@@ -60,13 +61,17 @@ class ImageRemovalApp:
         self.next_button = tk.Button(root, text="Next", command=self.next_image)
         self.prev_button = tk.Button(root, text="Prev", command=self.prev_image)
 
-        self.remove_button = tk.Button(root, text="Remove", command=self.remove_image)
+        self.remove_button = tk.Button(root, text="Stage/Unstage removal", command=self.remove_image)
         self.script_label = tk.Label(root, text="Script File Name:")
         self.flagged_text = tk.Label(root, text="Flagged for deletion:")
         self.flagged_label = tk.Label(root, text="False")
         self.script_entry = tk.Entry(root)
         self.script_entry.insert(0, self.script_file_name)
         self.update_script_button = tk.Button(root, text="Update Script", command=self.update_script)
+
+        self.root.bind('<Right>', lambda event: self.next_image())
+        self.root.bind('<Left>', lambda event: self.prev_image())
+        self.root.bind('<space>', lambda event: self.remove_image())
 
         self.next_button.grid(row=0, column=3, rowspan=1, columnspan=1)
         self.prev_button.grid(row=0, column=2, rowspan=1, columnspan=1)
@@ -137,7 +142,7 @@ class ImageRemovalApp:
             #del self.images_rgb_bbox[self.current_index]
             #del self.images_segm[self.current_index]
             #del self.images_depth[self.current_index]
-            self.flaggedforDelete[self.current_index] = True
+            self.flaggedforDelete[self.current_index] = not self.flaggedforDelete[self.current_index]
             self.load_quadrant_images()
 
     def append_to_script(self, command):
@@ -145,13 +150,17 @@ class ImageRemovalApp:
             script_file.write(command + "\n")
 
     def batch_add_deletions(self):
+        if os.path.isfile(self.script_file_name):
+            os.remove(self.script_file_name)
+
+
         for i, file in enumerate(self.image_paths_rgb_bbox):
             if self.flaggedforDelete[i]:
-                file = self.image_paths_rgb_bbox[i]
+                #file = self.image_paths_rgb_bbox[i]
                 file_name = os.path.basename(file)
 
                 dirname = os.path.dirname(file)
-                self.append_to_script(f"find . -name \{file_name}.* -type f -delete")
+                self.append_to_script(f"find . -name \x5c{file_name.split('.')[0]}.* -type f -delete")
 
     def update_script(self):
         self.script_file_name = self.script_entry.get()
