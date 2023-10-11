@@ -8,7 +8,7 @@ install simply by cloning the repo. create a virtualenv and install dependencies
 ### Setup path
 In the source code of the review tool (line 22: self.load_image_paths(folder='new_batches/world_0_drones_1') you can change the name of the data folder. The path starts from the scripts directory.
 This folder must exist and the subfolder structure should look like this:
-
+<pre>
 new_batches/world_0_drones_1
 ├── backgrounds
 ├── out_bbox
@@ -16,13 +16,15 @@ new_batches/world_0_drones_1
 ├── out_rgb
 ├── out_rgb_bbox
 └── out_segm
+</pre>
 backgrounds has the same substructure:
+<pre>
 new_batches/world_0_drones_1/backgrounds/
 ├── out_bbox
 ├── out_depth
 ├── out_rgb
 └── out_segm
-
+</pre>
 ![image](https://github.com/saab/data_review/assets/6775811/b9825be4-b0f0-463f-a889-dd5c40c54173)
 
 
