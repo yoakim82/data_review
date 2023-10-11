@@ -32,6 +32,9 @@ new_batches/world_0_drones_1/backgrounds/
 When reviewing, look for objects present in real image that does not have a correct bounding box (missing or ill-shaped). A good source of help is to use the semantic view which colours the pixels of our classes of interest.
 Find the discrepancies between semantic view and bbox view and judge if you think the object is visible enough to be annotated. If you find a problem with the image, stage it for removal with the associated button.
 
+### Shortcut keys
+For convenience, you kan use Right/Left arrow keys to navigate between images. Use Spacebar to stage for removal.
+
 ### Removing samples
 The images you stage for removal will have a boolean True value in the flagged for deletion field. Whenever you feel like "saving your results" click the update script button. 
 This will sift through all images in the listed directory and add a one-line find command to the shell script delete_script.sh of the following form:
