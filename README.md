@@ -35,7 +35,9 @@ Find the discrepancies between semantic view and bbox view and judge if you thin
 ### Removing samples
 The images you stage for removal will have a boolean True value in the flagged for deletion field. Whenever you feel like "saving your results" click the update script button. 
 This will sift through all images in the listed directory and add a one-line find command to the shell script delete_script.sh of the following form:
-  find . -name \169686183078.* -type f -delete
+<pre>
+find . -name \169686183078.* -type f -delete
+</pre>
 This command will find all images and associated files related to a specific scene.
 You may review this file at any time and execute it manually when you feel it is correct.
 
