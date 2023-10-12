@@ -19,7 +19,7 @@ class ImageRemovalApp:
         self.current_index = 0
         self.script_file_name = "delete_script.sh"  # Default script file name
 
-        self.load_image_paths(folder='new_batches')
+        self.load_image_paths(folder='new_batches/world_1_drones_1')
         self.load_images()
 
         self.create_gui()
@@ -42,9 +42,7 @@ class ImageRemovalApp:
                         #self.image_paths_backgrounds.append(os.path.join(dirname, 'backgrounds/out_rgb', base))
 
     def load_images(self):
-        self.images_rgb_bbox = [Image.open(file) for file in self.image_paths_rgb_bbox]
-        self.images_segm = [Image.open(file) for file in self.image_paths_segm]
-        self.images_depth = [Image.open(file) for file in self.image_paths_depth]
+        # Too costly to open all images into memory for large datasets, do it on the fly instead
         self.flaggedforDelete = [False for file in self.image_paths_rgb_bbox]
         #self.images_rgb = [Image.open(file) for file in self.image_paths_rgb]
         #self.images_backgrounds = [Image.open(file) for file in self.image_paths_backgrounds]
@@ -87,16 +85,24 @@ class ImageRemovalApp:
 
     def load_quadrant_images(self):
         self.flagged_label.config(text=str(self.flaggedforDelete[self.current_index]))
-        scale =2
+        scale = 2
         self.root.title(f"image {self.current_index}: {self.image_paths_rgb_bbox[self.current_index]}")
         img_format = (int(1920 / scale), int(1080 / scale))
+
         if self.current_index < len(self.image_paths_rgb_bbox):
-            image_rgb_bbox = self.images_rgb_bbox[self.current_index].resize(img_format)
+
+            #self.images_rgb_bbox = [Image.open(file) for file in self.image_paths_rgb_bbox]
+            #self.images_segm = [Image.open(file) for file in self.image_paths_segm]
+            #self.images_depth = [Image.open(file) for file in self.image_paths_depth]
+
+            image_rgb_bbox = Image.open(self.image_paths_rgb_bbox[self.current_index])
+            image_rgb_bbox = image_rgb_bbox.resize(img_format)
             photo_rgb_bbox = ImageTk.PhotoImage(image_rgb_bbox)
             self.upper_left_label.config(image=photo_rgb_bbox)
             self.upper_left_label.image = photo_rgb_bbox
 
-            image_segm = self.images_segm[self.current_index].resize(img_format, resample=Image.Resampling.NEAREST)
+            image_segm = Image.open(self.image_paths_segm[self.current_index])
+            image_segm = image_segm.resize(img_format, resample=Image.Resampling.NEAREST)
             transform_segm = colorpalette.convert_image_with_palette(image_segm)
             photo_segm = ImageTk.PhotoImage(transform_segm)
             self.lower_left_label.config(image=photo_segm)
@@ -110,7 +116,8 @@ class ImageRemovalApp:
             #self.bottom_right_label.config(image=photo_diff)
             #self.bottom_right_label.image = photo_diff
 
-            image_depth = self.images_depth[self.current_index].resize(img_format)
+            image_depth = Image.open(self.image_paths_depth[self.current_index])
+            image_depth = image_depth.resize(img_format)
             photo_depth = ImageTk.PhotoImage(image_depth)
             self.bottom_right_label.config(image=photo_depth)
             self.bottom_right_label.image = photo_depth
