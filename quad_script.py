@@ -3,6 +3,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import colorpalette
 import pathlib
+import json
 
 class ImageRemovalApp:
     def __init__(self, root):
@@ -19,7 +20,7 @@ class ImageRemovalApp:
         self.current_index = 0
         self.script_file_name = "delete_script.sh"  # Default script file name
 
-        self.load_image_paths(folder='new_batches/world_1_drones_1')
+        self.load_image_paths(folder='test/world_0_drones_1')
         self.load_images()
 
         self.create_gui()
@@ -52,9 +53,9 @@ class ImageRemovalApp:
         self.lower_left_label = tk.Label(root)
         self.bottom_right_label = tk.Label(root)
 
-        self.upper_left_label.grid(row=0, column=0, columnspan=2, rowspan=3)
-        self.lower_left_label.grid(row=3, column=0, columnspan=2, rowspan=2)
-        self.bottom_right_label.grid(row=3, column=2, columnspan=4, rowspan=2)
+        self.upper_left_label.grid(row=0, column=0, columnspan=2, rowspan=4)
+        self.lower_left_label.grid(row=4, column=0, columnspan=2, rowspan=2)
+        self.bottom_right_label.grid(row=4, column=2, columnspan=4, rowspan=2)
 
         self.next_button = tk.Button(root, text="Next", command=self.next_image)
         self.prev_button = tk.Button(root, text="Prev", command=self.prev_image)
@@ -66,6 +67,8 @@ class ImageRemovalApp:
         self.script_entry = tk.Entry(root)
         self.script_entry.insert(0, self.script_file_name)
         self.update_script_button = tk.Button(root, text="Update Script", command=self.update_script)
+        self.boxes = tk.Text(root, height=6, width=15)
+        self.rmboxes = tk.Text(root, height=6, width=15) #tk.Label(root, text="rmboxes:")
 
         self.root.bind('<Right>', lambda event: self.next_image())
         self.root.bind('<Left>', lambda event: self.prev_image())
@@ -77,11 +80,50 @@ class ImageRemovalApp:
         self.script_label.grid(row=1, column=2, rowspan=1, columnspan=1)
         self.flagged_text.grid(row=2, column=2, rowspan=1, columnspan=1)
         self.flagged_label.grid(row=2, column=3, rowspan=1, columnspan=1)
+        self.boxes.grid(row=3, column=2, rowspan=1, columnspan=1)
+        self.rmboxes.grid(row=3, column=3, rowspan=1, columnspan=1)
 
         self.script_entry.grid(row=1, column=3, rowspan=1, columnspan=1)
         self.update_script_button.grid(row=1, column=4, rowspan=1, columnspan=1)
 
         self.load_quadrant_images()
+
+    def process_annotation(self, json_file, area_threshold, box_areas, removed_box_areas):
+        with open(json_file, 'r') as f:
+            data = json.load(f)
+
+        bboxes = data["bboxes"]
+        vehicle_class = data["vehicle_class"]
+        removed_bboxes = data["removed_bboxes"]
+        removed_vehicle_class = data["removed_vehicle_class"]
+
+        i, j = 0, 0
+        while j < len(removed_bboxes):
+            rbox = removed_bboxes[j]
+            min_x, min_y = rbox[0]
+            max_x, max_y = rbox[1]
+            area = (max_x - min_x) * (max_y - min_y)
+
+            # print(f"INFO: area of removed box {j} is {area} pixels.")
+            j += 1
+
+            removed_box_areas.append(area)
+
+        while i < len(bboxes):
+            box = bboxes[i]
+            min_x, min_y = box[0]
+            max_x, max_y = box[1]
+            area = (max_x - min_x) * (max_y - min_y)
+
+            print(f"box {i} with area {area} pixels of class {vehicle_class[i]}")
+
+            i += 1
+
+            box_areas.append(area)
+
+        if len(bboxes) == 0:
+            print("No boxes found (all boxes are in the remove list)")
+
 
     def load_quadrant_images(self):
         self.flagged_label.config(text=str(self.flaggedforDelete[self.current_index]))
@@ -121,6 +163,25 @@ class ImageRemovalApp:
             photo_depth = ImageTk.PhotoImage(image_depth)
             self.bottom_right_label.config(image=photo_depth)
             self.bottom_right_label.image = photo_depth
+
+            dirname = os.path.dirname(self.image_paths_rgb_bbox[self.current_index])
+            basename = os.path.basename(self.image_paths_rgb_bbox[self.current_index])
+            parent = os.path.dirname(dirname)
+            json_path = os.path.join(parent, "out_bbox", basename.split('.')[0] + ".txt")
+            box_areas, removed_box_areas = [], []
+
+            self.process_annotation(json_path, 0, box_areas, removed_box_areas)
+
+            def pretty_print(boxes):
+                retstr = []
+                for i in boxes:
+                    retstr.append(str(int(i)) + "\n")
+                return "".join([s for s in retstr])
+
+            self.boxes.delete("1.0", "end")
+            self.boxes.insert(tk.END, pretty_print(box_areas))
+            self.rmboxes.delete("1.0", "end")
+            self.rmboxes.insert(tk.END, pretty_print(removed_box_areas))
 
     def next_image(self):
         self.current_index += 1
