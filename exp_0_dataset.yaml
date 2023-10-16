@@ -1,0 +1,6 @@
+train: ./test/train_exp_0.txt
+val:   ./test/valid_exp_0.txt
+test:  ./test/test_exp_0.txt
+
+nc: 4
+names: ['multirotor', 'fixedwing', 'airliner', 'bird']
