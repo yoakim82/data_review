@@ -62,11 +62,11 @@ def process_json(json_file, area_threshold, box_areas, removed_box_areas, trim_s
             json.dump(data, f, indent=4)
 
 
-def process_files(pattern, area_threshold):
+def process_files(pattern, area_threshold, scriptname):
     file_list = glob.glob(pattern)
     box_areas = []
     removed_box_areas = []
-    trim_script = "trimmed_images.sh"
+    trim_script = scriptname
 
     for file in file_list:
         print(f"processing file {file}:")
@@ -82,15 +82,20 @@ def process_files(pattern, area_threshold):
 
 # Example usage:
 pattern = "test/world_0_drones_1/out_bbox/*.txt"  # Replace with your file pattern
+patterns = [f"test/world_{i}_drones_1/out_bbox/*.txt" for i in range(8)]
+
 #pattern = "json*.txt"
 area_threshold = 100  # You can set your own threshold here
-box_areas, removed_box_areas = process_files(pattern, area_threshold)
+for i, pattern in enumerate(patterns):
 
-plt.hist(box_areas, bins=50, range=(0, 1000))
-plt.title("Box Area Histogram")
-plt.xlabel("Area")
-plt.ylabel("Frequency")
-plt.show()
+    box_areas, removed_box_areas = process_files(pattern, area_threshold, f"trimmed_images_world_{i}_drones_1.sh")
+
+    plt.hist(box_areas, bins=50, range=(0, 1000))
+    plt.title(f"Box Area Histogram for world_{i}_drones_1")
+    plt.xlabel("Area")
+    plt.ylabel("Frequency")
+    plt.savefig(f"area_hist_world_{i}_drones_1.png")
+
 #plt.hist(removed_box_areas, bins=50)
 #plt.title("Removed Box Area Histogram")
 #plt.xlabel("Area")
