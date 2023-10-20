@@ -70,10 +70,11 @@ def split_dataset(out_rgb_folder, train_ratio, test_ratio, valid_ratio):
             valid_file.write(f"{os.path.abspath(path)}\n")
 
 
-def partition_dataset(dataset_folder, train_folders, validation_folders, test_folders, exp_name):
+def partition_dataset(dataset_folder, train_folders, validation_folders, test_folders, background_folders, background_ratio, exp_name):
     train_paths = []
     val_paths = []
     test_paths = []
+    background_paths = []
 
     for folder in train_folders:
         train_paths.append(glob(os.path.join(dataset_folder, folder, "out_rgb", "*.png")))
@@ -82,7 +83,14 @@ def partition_dataset(dataset_folder, train_folders, validation_folders, test_fo
     for folder in test_folders:
         test_paths.append(glob(os.path.join(dataset_folder, folder, "out_rgb", "*.png")))
 
-    total_trains = len(train_paths)
+    total_trains = sum([len(i) for i in train_paths])
+    wanted_total_num_background = total_trains * background_ratio
+    wanted_num_background_per_folder = int(wanted_total_num_background / len(background_folders))
+    for folder in background_folders:
+        image_paths = glob(os.path.join(dataset_folder, folder, "backgrounds", "out_rgb", "*.png"))
+        random.shuffle(image_paths)
+        background_paths.append(image_paths[:wanted_num_background_per_folder])
+
     total_valids = len(val_paths)
     total_tests = len(test_paths)
 
@@ -91,6 +99,12 @@ def partition_dataset(dataset_folder, train_folders, validation_folders, test_fo
         for folder in train_paths:
             for path in folder:
                 train_file.write(f"{os.path.abspath(path)}\n")
+
+        # add background images only to training portion
+        for folder in background_paths:
+            for path in folder:
+                train_file.write(f"{os.path.abspath(path)}\n")
+
 
 
     with open(os.path.join(dataset_folder, f"valid_{exp_name}.txt"), "w") as valid_file:
@@ -164,7 +178,7 @@ def main():
     val_list = shifted_list[args.train_num:args.train_num+args.valid_num]
     test_list = shifted_list[args.train_num+args.valid_num:]
     exp_name = f"exp_{args.shift}"
-    partition_dataset(args.folder, train_list, val_list, test_list, exp_name)
+    partition_dataset(args.folder, train_list, val_list, test_list, train_list, 0.2, exp_name)
     create_dataset_yaml(exp_name, args.folder)
 
 
