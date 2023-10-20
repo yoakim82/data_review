@@ -20,7 +20,7 @@ class ImageRemovalApp:
         self.current_index = 0
         self.script_file_name = "delete_script.sh"  # Default script file name
 
-        self.load_image_paths(folder='test/world_0_drones_1')
+        self.load_image_paths(folder='new_batches/world_0_drones_1')
         self.load_images()
 
         self.create_gui()
