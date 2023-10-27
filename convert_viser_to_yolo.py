@@ -4,6 +4,7 @@ import argparse
 import json
 from glob import glob
 import yaml
+import cv2
 
 def create_yolo_labels_folder(folder):
     labels_folder = os.path.join(folder, "")
@@ -132,6 +133,77 @@ def create_dataset_yaml(exp_name, folder):
         script_file.write(command + "\n")
 
 
+def convert_drone_vs_bird_to_yolo(data_folder, annotation_folder, filename, output_dir):
+    # Define input file paths
+    video_file_path = os.path.join(data_folder, f"{filename}.mp4")
+    text_file_path = os.path.join(annotation_folder, f"{filename}.txt")
+
+    # Create an output directory to store images and annotations
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Open the text file to read detection data
+    with open(text_file_path, "r") as text_file:
+        lines = text_file.readlines()
+
+    # Open the video file for frame extraction
+    cap = cv2.VideoCapture(video_file_path)
+
+    if not cap.isOpened():
+        print("Error: Unable to open video file.")
+        exit()
+
+    frame_number = 0
+    frame_width = int(cap.get(3))
+    frame_height = int(cap.get(4))
+
+    for line in lines:
+        values = line.split()
+        has_object = int(values[1])
+
+        # always read the frame from the video (to stay in sync)
+        ret, frame = cap.read()
+        if not ret:
+            print(f"reached end of file, frame number = {frame_number}.")
+            break
+
+        if has_object == 1:
+            x, y, w, h = map(int, values[2:6])
+            class_name = values[6].strip()
+
+            # Read the frame from the video
+
+
+            # Save the frame as an image
+            frame_filename = f"{filename}_fr{frame_number}.png"
+            frame_path = os.path.join(output_dir, frame_filename)
+            cv2.imwrite(frame_path, frame)
+
+            box = [[x, y], [x+w, y+h]]
+            yolo_bboxes = convert_to_yolo_format(bboxes=[box], image_width=frame_width, image_height=frame_height)
+
+            #label_filename = os.path.join(labels_folder, os.path.basename(annotation_file).replace(".txt", ".txt"))
+            annotation_filename = os.path.join(output_dir, f"{filename}_fr{frame_number}.txt")
+            with open(annotation_filename, "w") as label_file:
+                for i, bbox in enumerate(yolo_bboxes):
+                    # assign the class labels according to this lookup table:
+
+                    class_definition = {"drone": 0,  # multirotor
+                                        "5": 1,  # fixedwing
+                                        "6": 2,  # airliner
+                                        "7": 3  # bird
+                                        }
+                    class_label = class_definition[class_name]
+
+                    label_file.write(f"{class_label} {' '.join(map(str, bbox))}\n")
+
+        frame_number += 1
+
+    # Release the video capture object and clean up
+    cap.release()
+    cv2.destroyAllWindows()
+
+
 
 def main():
     parser = argparse.ArgumentParser(description="Convert annotation files to YOLO format and split the dataset.")
@@ -169,4 +241,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+
+    convert_drone_vs_bird_to_yolo(data_folder="drone-vs-birds",
+                                  annotation_folder=os.path.join("drone-vs-birds", "annotations"),
+                                  filename="00_01_52_to_00_01_58", output_dir=os.path.join("drone-vs-birds", "yolo_annotations"))
+
