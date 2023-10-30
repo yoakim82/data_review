@@ -81,11 +81,11 @@ def process_files(pattern, area_threshold, scriptname):
 
 
 # Example usage:
-pattern = "test/world_0_drones_1/out_bbox/*.txt"  # Replace with your file pattern
-patterns = [f"test/world_{i}_drones_1/out_bbox/*.txt" for i in range(8)]
+folder = "new_batches"
+patterns = [f"{folder}/world_{i}_drones_1/out_bbox/*.txt" for i in range(8)]
 
 #pattern = "json*.txt"
-area_threshold = 100  # You can set your own threshold here
+area_threshold = 100  # remove annotation of any boxes greater than 100 pixels
 for i, pattern in enumerate(patterns):
 
     box_areas, removed_box_areas = process_files(pattern, area_threshold, f"trimmed_images_world_{i}_drones_1.sh")
