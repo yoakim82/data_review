@@ -74,10 +74,11 @@ def split_dataset(out_rgb_folder, train_ratio, test_ratio, valid_ratio):
             valid_file.write(f"{os.path.abspath(path)}\n")
 
 
-def partition_dataset(dataset_folder, train_folders, validation_folders, test_folders, exp_name):
+def partition_dataset(dataset_folder, train_folders, validation_folders, test_folders, background_folders, background_ratio, exp_name):
     train_paths = []
     val_paths = []
     test_paths = []
+    background_paths = []
 
     for folder in train_folders:
         train_paths.append(glob(os.path.join(dataset_folder, folder, "out_rgb", "*.png")))
@@ -86,7 +87,14 @@ def partition_dataset(dataset_folder, train_folders, validation_folders, test_fo
     for folder in test_folders:
         test_paths.append(glob(os.path.join(dataset_folder, folder, "out_rgb", "*.png")))
 
-    total_trains = len(train_paths)
+    total_trains = sum([len(i) for i in train_paths])
+    wanted_total_num_background = total_trains * background_ratio
+    wanted_num_background_per_folder = int(wanted_total_num_background / len(background_folders))
+    for folder in background_folders:
+        image_paths = glob(os.path.join(dataset_folder, folder, "backgrounds", "out_rgb", "*.png"))
+        random.shuffle(image_paths)
+        background_paths.append(image_paths[:wanted_num_background_per_folder])
+
     total_valids = len(val_paths)
     total_tests = len(test_paths)
 
@@ -95,6 +103,12 @@ def partition_dataset(dataset_folder, train_folders, validation_folders, test_fo
         for folder in train_paths:
             for path in folder:
                 train_file.write(f"{os.path.abspath(path)}\n")
+
+        # add background images only to training portion
+        for folder in background_paths:
+            for path in folder:
+                train_file.write(f"{os.path.abspath(path)}\n")
+
 
 
     with open(os.path.join(dataset_folder, f"valid_{exp_name}.txt"), "w") as valid_file:
@@ -117,20 +131,34 @@ def permute_list(list, shift=0):
 
 
 
-def create_dataset_yaml(exp_name, folder):
+def create_dataset_yaml(exp_name, folder, framework="yolov7"):
 
-    data = {
-        'train': f"./{folder}/train_{exp_name}.txt",
-        'val':   f"./{folder}/valid_{exp_name}.txt",
-        'test':  f"./{folder}/test_{exp_name}.txt",
-        'nc': 4,
-        'names': ['multirotor', 'fixedwing', 'airliner', 'bird']
-    }
     yaml_file_name = f"{os.path.join(folder, exp_name)}_dataset.yaml"
+
+    if framework=="yolov7":
+        data = {
+            'train': f"./{folder}/train_{exp_name}.txt",
+            'val':   f"./{folder}/valid_{exp_name}.txt",
+            'test':  f"./{folder}/test_{exp_name}.txt",
+            'nc': 4,
+            'names': ['multirotor', 'fixedwing', 'airliner', 'bird']
+        }
+        command = f"python train_aux.py --img 640 --batch 16 --epochs 10 --data {yaml_file_name} --cfg ./cfg/training/yolov7-w6.yaml --weights '' --name {exp_name}"
+
+    elif framework=="yolov8":
+        data = {
+            'train': f"./train_{exp_name}.txt",
+            'val': f"./valid_{exp_name}.txt",
+            'test': f"./test_{exp_name}.txt",
+            'nc': 4,
+            'names': ['multirotor', 'fixedwing', 'airliner', 'bird']
+        }
+        command = f"python train.py --directory {folder} --img_size 1920 --batch 6 --epochs 100 --data {yaml_file_name} --name {exp_name}"
+
     with open(yaml_file_name, 'w') as yaml_file:
         yaml.dump(data, yaml_file, default_flow_style=False)
 
-    command = f"python train_aux.py --img 640 --batch 16 --epochs 10 --data {yaml_file_name} --cfg ./cfg/training/yolov7-w6.yaml --weights '' --name {exp_name}"
+    #command = f"python train_aux.py --img 640 --batch 16 --epochs 10 --data {yaml_file_name} --cfg ./cfg/training/yolov7-w6.yaml --weights '' --name {exp_name}"
     command_file_name = f"{os.path.join(folder, exp_name)}_train.sh"
     with open(command_file_name, "a") as script_file:
         script_file.write(command + "\n")
@@ -303,9 +331,9 @@ def main():
     parser = argparse.ArgumentParser(description="Convert annotation files to YOLO format and split the dataset.")
     parser.add_argument("--folder", required=True, help="Path to the folder containing 'out_rgb' and 'out_bbox'.")
     parser.add_argument("--train_num", type=int, default=5, help="Number of training folders (default: 5).")
-    parser.add_argument("--test_num,", type=int, default=1, help="Number of test folders (default: 1).")
     parser.add_argument("--valid_num", type=int, default=2, help="Number of validation folders (default: 2).")
-    parser.add_argument("--experiment_name", default="test")
+    parser.add_argument("--test_num,", type=int, default=1, help="Number of test folders (default: 1).")
+    parser.add_argument("--experiment_name", type=str, default="exp", help="Name of experiment (default: exp)")
     parser.add_argument("--shift", type=int, default=0, help="how many steps to rotate data folders before splitting (default: 0)")
     parser.add_argument("--source", type=str, default="carla", help="use 'carla' if input is synthetic data or 'drones-vs-birds' for real test data (default: 'carla')")
 
