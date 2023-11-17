@@ -81,7 +81,7 @@ def process_files(pattern, area_threshold, scriptname):
 
 
 # Example usage:
-folder = "small_nerf_batches"
+folder = "seg_small_batches"
 patterns = [f"{folder}/world_{i}_drones_1/out_bbox/*.txt" for i in range(8)]
 
 #pattern = "json*.txt"
