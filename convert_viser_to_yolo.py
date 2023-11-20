@@ -27,12 +27,11 @@ def convert_to_yolo_format(bboxes, image_width, image_height):
         yolo_bboxes.append([x_center, y_center, width, height])
     return yolo_bboxes
 
-def convert_annotation(annotation_file, labels_folder, image_path):
+def convert_annotation(annotation_file, labels_folder, image_path, img_size):
     with open(annotation_file, "r") as f:
         annotation_data = json.load(f)
 
-    image_width = 1920  # Update with the actual image width
-    image_height = 1080  # Update with the actual image height
+    (image_width, image_height) = img_size  # Update with the actual image height
 
     yolo_bboxes = convert_to_yolo_format(annotation_data.get("bboxes", []), image_width, image_height)
 
@@ -44,10 +43,13 @@ def convert_annotation(annotation_file, labels_folder, image_path):
             class_definition = {4: 0,  # multirotor
                                 5: 1,  # fixedwing
                                 6: 2,  # airliner
-                                7: 3  # bird
+                                7: 3,  # bird
+                                9: 2 # airliner
                                 }
-            class_label = class_definition[annotation_data['vehicle_class'][i]]
+            if annotation_data['vehicle_class'][i] < 4 or annotation_data['vehicle_class'][i] > 7:
+                print(f"found class label {annotation_data['vehicle_class'][i]} in file {annotation_file}")
 
+            class_label = class_definition[annotation_data['vehicle_class'][i]]
             label_file.write(f"{class_label} {' '.join(map(str, bbox))}\n")
 
 def split_dataset(out_rgb_folder, train_ratio, test_ratio, valid_ratio):
@@ -152,17 +154,24 @@ def create_dataset_yaml(exp_name, folder, framework="yolov7"):
             'train': f"./train_{exp_name}.txt",
             'val': f"./valid_{exp_name}.txt",
             'test': f"./test_{exp_name}.txt",
+            'drone-vs-birds': f"drone-vs-birds/drone_vs_birds_0.txt",
+            '4k_drone-vs-birds': f"drone-vs-birds/4k_drone_vs_birds_0.txt",
+            'vtol' : 'granso/vtol.txt',
             'nc': 4,
             'names': ['multirotor', 'fixedwing', 'airliner', 'bird']
         }
-        command = f"python train.py --directory {folder} --img_size 1920 --batch 6 --epochs 100 --data {yaml_file_name} --name {exp_name}"
+        if img_size == 1920:
+            batch = 6
+        else:
+            batch = 64
+        command = f"python train.py --directory {folder} --img_size {img_size} --batch {batch} --epochs 100 --data {yaml_file_name} --name {exp_name}"
 
     with open(yaml_file_name, 'w') as yaml_file:
         yaml.dump(data, yaml_file, default_flow_style=False)
 
     #command = f"python train_aux.py --img 640 --batch 16 --epochs 10 --data {yaml_file_name} --cfg ./cfg/training/yolov7-w6.yaml --weights '' --name {exp_name}"
     command_file_name = f"{os.path.join(folder, exp_name)}_train.sh"
-    with open(command_file_name, "a") as script_file:
+    with open(command_file_name, "w") as script_file:
         script_file.write(command + "\n")
 
 
@@ -208,7 +217,7 @@ def get_frame(cap, frame_number):
     return cap.read()
 
 
-def convert_drone_vs_bird_to_yolo(data_folder, annotation_folder, filename, output_dir, num_frames_to_save, scale=0.5):
+def convert_drone_vs_bird_to_yolo(data_folder, annotation_folder, filename, output_dir, num_frames_to_save):
     # Define input file paths
     print(f"processing file {filename}, extracting {num_frames_to_save} random images.")
     possible_extensions = ["avi", "mpg", "mp4", "AVI", "MPG", "MP4"]
@@ -384,7 +393,7 @@ def main():
         num_frames_to_save = [int(x * save_ratio) for x in num_drone_frames]
         output_dir = os.path.join(args.folder, "4k_annotations")
 
-        startFromHere = True
+        startFromHere = False
         print("Extracting frames from video sequences and converting to yolo format.")
         for (num_frames, filename) in zip(num_frames_to_save, annotations_4k):
             fname = os.path.basename(filename).split(".")[0]
@@ -405,6 +414,18 @@ def main():
             for path in file_paths:
                 test_file.write(f"{os.path.abspath(path)}\n")
         #create_dataset_yaml(exp_name, args.folder)
+
+    elif args.source == "custom":
+        output_dir = os.path.join(args.folder, args.experiment_name)
+
+        file_paths = glob(os.path.join(output_dir, "*.png"))
+        dataset_file_name = os.path.join(args.folder, f"{args.experiment_name}.txt")
+        with open(dataset_file_name, "w") as test_file:
+            for path in file_paths:
+                test_file.write(f"{os.path.abspath(path)}\n")
+
+        append_dataset_yaml(args.experiment_name, dataset_file_name)
+
 
 if __name__ == "__main__":
     main()

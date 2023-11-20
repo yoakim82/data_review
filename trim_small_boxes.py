@@ -81,20 +81,20 @@ def process_files(pattern, area_threshold, scriptname):
 
 
 # Example usage:
-folder = "new_batches"
+folder = "seg_small_batches"
 patterns = [f"{folder}/world_{i}_drones_1/out_bbox/*.txt" for i in range(8)]
 
 #pattern = "json*.txt"
 area_threshold = 100  # remove annotation of any boxes greater than 100 pixels
 for i, pattern in enumerate(patterns):
 
-    box_areas, removed_box_areas = process_files(pattern, area_threshold, f"trimmed_images_world_{i}_drones_1.sh")
+    box_areas, removed_box_areas = process_files(pattern, area_threshold, f"{folder}_trimmed_images_world_{i}_drones_1.sh")
 
     plt.hist(box_areas, bins=50, range=(0, 1000))
     plt.title(f"Box Area Histogram for world_{i}_drones_1")
     plt.xlabel("Area")
     plt.ylabel("Frequency")
-    plt.savefig(f"area_hist_world_{i}_drones_1.png")
+    plt.savefig(f"{folder}_area_hist_world_{i}_drones_1.png")
 
 #plt.hist(removed_box_areas, bins=50)
 #plt.title("Removed Box Area Histogram")
