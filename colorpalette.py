@@ -89,6 +89,11 @@ cityscapes_palette = {
     32: (255, 000, 255), # bird = 32
 }
 
+class_colors = {"multirotor": cityscapes_palette[29],
+                "fixedwing": cityscapes_palette[30],
+                "airliner":  cityscapes_palette[31],
+                "bird":  cityscapes_palette[32]}
+
 
 def convert_image_with_palette(image, color_palette=cityscapes_palette):
     # Convert the PIL image to a NumPy array
