@@ -149,14 +149,17 @@ def create_dataset_yaml(exp_name, folder, framework="yolov8", img_size=1920):
 
     elif framework=="yolov8":
         data = {
-            'train': f"./train_{exp_name}.txt",
-            'val': f"./valid_{exp_name}.txt",
-            'test': f"./test_{exp_name}.txt",
+            'path': '/home/lxc/stjoly/datasets/viser/',
+            'train': f"{folder}/train_{exp_name}.txt",
+            'val': f"{folder}/valid_{exp_name}.txt",
+            'test': f"{folder}/test_{exp_name}.txt",
             'drone-vs-birds': f"drone-vs-birds/drone_vs_birds_0.txt",
             '4k_drone-vs-birds': f"drone-vs-birds/4k_drone_vs_birds_0.txt",
             'vtol' : 'granso/vtol.txt',
             'nc': 4,
-            'names': ['multirotor', 'fixedwing', 'airliner', 'bird']
+            'names': ['multirotor', 'fixedwing', 'airliner', 'bird'],
+            'valsplit': 'val_vtol',
+            'val_vtol': 'granso/vtol.txt'
         }
         if img_size == 1920:
             batch = 6
@@ -337,8 +340,11 @@ def count_frames_w_annotations(annotation_folder):
 
 
 def append_dataset_yaml(experiment_name, dataset_file_name):
-    folders = ["new_batches", "nerf_batches", "small_batches", "small_nerf_batches"]
+    folders = ["new_batches", "nerf_batches", "small_batches", "small_nerf_batches", "seg_small_batches", "seg_small_nerf_batches", "vtol_nerf_batches", "multi_nerf_batches"]
+
     for f in folders:
+        if f != "multi_nerf_batches":
+            continue
         yaml_files = glob(os.path.join(f, "*.yaml"))
         for y in yaml_files:
             with open(y, 'a') as file:
