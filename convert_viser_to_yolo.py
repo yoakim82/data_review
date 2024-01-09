@@ -343,8 +343,8 @@ def append_dataset_yaml(experiment_name, dataset_file_name):
     folders = ["new_batches", "nerf_batches", "small_batches", "small_nerf_batches", "seg_small_batches", "seg_small_nerf_batches", "vtol_nerf_batches", "multi_nerf_batches"]
 
     for f in folders:
-        if f != "multi_nerf_batches":
-            continue
+        #if f != "multi_nerf_batches":
+        #    continue
         yaml_files = glob(os.path.join(f, "*.yaml"))
         for y in yaml_files:
             with open(y, 'a') as file:
@@ -428,7 +428,8 @@ def main():
             for path in file_paths:
                 test_file.write(f"{os.path.abspath(path)}\n")
 
-        append_dataset_yaml(args.experiment_name, dataset_file_name)
+        create_dataset_yaml(args.experiment_name, args.folder, framework="yolov8", img_size=1920)
+        #append_dataset_yaml(args.experiment_name, dataset_file_name)
 
 
 if __name__ == "__main__":
