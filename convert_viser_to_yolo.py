@@ -159,7 +159,8 @@ def create_dataset_yaml(exp_name, folder, framework="yolov8", img_size=1920):
             'nc': 4,
             'names': ['multirotor', 'fixedwing', 'airliner', 'bird'],
             'valsplit': 'val_vtol',
-            'val_vtol': 'granso/vtol.txt'
+            'val_vtol': 'granso/vtol.txt',
+            'field': 'granso/vtol.txt'
         }
         if img_size == 1920:
             batch = 6
@@ -218,7 +219,7 @@ def get_frame(cap, frame_number):
     return cap.read()
 
 
-def convert_drone_vs_bird_to_yolo(data_folder, annotation_folder, filename, output_dir, num_frames_to_save):
+def convert_drone_vs_bird_to_yolo(data_folder, annotation_folder, filename, output_dir, num_frames_to_save, scale=0.5):
     # Define input file paths
     print(f"processing file {filename}, extracting {num_frames_to_save} random images.")
     possible_extensions = ["avi", "mpg", "mp4", "AVI", "MPG", "MP4"]
@@ -287,7 +288,9 @@ def convert_drone_vs_bird_to_yolo(data_folder, annotation_folder, filename, outp
     for (classes, yolo_bboxes, filename, frame) in tqdm(data):
 
         frame_path = os.path.join(output_dir, f"{filename}.png")
-        cv2.imwrite(frame_path, frame)
+        frame_scaled = cv2.resize(frame, (0, 0), fx=scale, fy=scale)
+        cv2.imwrite(frame_path, frame_scaled)
+        print(frame_path)
 
         annotation_path = os.path.join(output_dir, f"{filename}.txt")
         with open(annotation_path, "w") as label_file:
@@ -340,15 +343,35 @@ def count_frames_w_annotations(annotation_folder):
 
 
 def append_dataset_yaml(experiment_name, dataset_file_name):
-    folders = ["new_batches", "nerf_batches", "small_batches", "small_nerf_batches", "seg_small_batches", "seg_small_nerf_batches", "vtol_nerf_batches", "multi_nerf_batches"]
-
+    folders = ["new_batches", "nerf_batches", "small_batches", "small_nerf_batches"]
     for f in folders:
-        #if f != "multi_nerf_batches":
+        # if f != "multi_nerf_batches":
         #    continue
         yaml_files = glob(os.path.join(f, "*.yaml"))
         for y in yaml_files:
             with open(y, 'a') as file:
                 file.write("\n" + f"{experiment_name}: {dataset_file_name}")
+
+
+def get_common_files(folder1, folder2):
+    files1 = set(os.listdir(folder1))
+    files2 = set(os.listdir(folder2))
+
+    common_files = files1.intersection(files2)
+
+    return list(common_files)
+
+
+def delete_files_in_list(folder_path, files_to_delete):
+    for file_name in files_to_delete:
+        file_path = os.path.join(folder_path, file_name)
+
+        try:
+            os.remove(file_path)
+            print(f"Deleted: {file_path}")
+        except OSError as e:
+            print(f"Error deleting {file_path}: {e}")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Convert annotation files to YOLO format and split the dataset.")
@@ -388,17 +411,21 @@ def main():
         create_dataset_yaml(exp_name, args.folder, framework="yolov8", img_size=width)
 
     elif args.source == "drone-vs-birds":
-        save_ratio = 0.03
+        save_ratio = 0.35
         exp_name = f"drone_vs_birds_{args.shift}"
         #partition_dataset(args.folder, train_list, val_list, test_list, exp_name)
 
         data_folder = os.path.join(args.folder, "train_videos")
         annotation_folder = os.path.join(args.folder, "annotations")
+        annotations_4k = resolutions.extract_by_width("resolutions.txt", 3840)
+        annotations_4k = [os.path.join(annotation_folder, a) for a in annotations_4k]
+        #annotations_hd = resolutions.extract_by_width("resolutions.txt", 1920)
+
         num_drone_frames = count_frames_w_annotations(annotation_folder)
         num_frames_to_save = [int(x * save_ratio) for x in num_drone_frames]
         output_dir = os.path.join(args.folder, "yolo_annotations")
 
-        startFromHere = False
+        startFromHere = True
         print("Extracting frames from video sequences and converting to yolo format.")
         for (num_frames, filename) in zip(num_frames_to_save, glob(os.path.join(annotation_folder, "*.txt"))):
             fname = os.path.basename(filename).split(".")[0]
@@ -411,7 +438,8 @@ def main():
                                               filename=fname,
                                               annotation_folder=annotation_folder,
                                               output_dir=output_dir,
-                                              num_frames_to_save=num_frames)
+                                              num_frames_to_save=num_frames,
+                                              scale=0.5)
 
             file_paths = glob(os.path.join(output_dir, "*.png"))
             with open(os.path.join(args.folder, f"{exp_name}.txt"), "w") as test_file:
@@ -433,5 +461,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+
+    # Example usage:
+    base = "/home/joakim/data_review/drone-vs-birds/"
+    folder1_path = '4k_annotations'
+    folder2_path = 'yolo_annotations'
+
+    common_files_list = get_common_files(os.path.join(base, folder1_path), os.path.join(base, folder2_path))
+
+    print(f"Common Files count: {len(common_files_list)}")
+    for file_name in common_files_list:
+        print(file_name)
+
+    # Example usage:
+    folder_path_to_delete_from = os.path.join(base, folder2_path)
+    #delete_files_in_list(folder_path_to_delete_from, common_files_list)
 
