@@ -217,7 +217,7 @@ def get_frame(cap, frame_number):
     return cap.read()
 
 
-def convert_drone_vs_bird_to_yolo(data_folder, annotation_folder, filename, output_dir, num_frames_to_save):
+def convert_drone_vs_bird_to_yolo(data_folder, annotation_folder, filename, output_dir, num_frames_to_save, scale=0.5):
     # Define input file paths
     print(f"processing file {filename}, extracting {num_frames_to_save} random images.")
     possible_extensions = ["avi", "mpg", "mp4", "AVI", "MPG", "MP4"]
@@ -340,6 +340,26 @@ def count_frames_w_annotations(annotation_file_list):
     return annotations
 
 
+def get_common_files(folder1, folder2):
+    files1 = set(os.listdir(folder1))
+    files2 = set(os.listdir(folder2))
+
+    common_files = files1.intersection(files2)
+
+    return list(common_files)
+
+
+def delete_files_in_list(folder_path, files_to_delete):
+    for file_name in files_to_delete:
+        file_path = os.path.join(folder_path, file_name)
+
+        try:
+            os.remove(file_path)
+            print(f"Deleted: {file_path}")
+        except OSError as e:
+            print(f"Error deleting {file_path}: {e}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Convert annotation files to YOLO format and split the dataset.")
     parser.add_argument("--folder", required=True, help="Path to the folder containing 'out_rgb' and 'out_bbox'.")
@@ -378,7 +398,7 @@ def main():
         create_dataset_yaml(exp_name, args.folder)
 
     elif args.source == "drone-vs-birds":
-        save_ratio = 0.15
+        save_ratio = 0.35
         exp_name = f"drone_vs_birds_{args.shift}"
         #partition_dataset(args.folder, train_list, val_list, test_list, exp_name)
 
@@ -391,9 +411,9 @@ def main():
 
         num_drone_frames = count_frames_w_annotations(annotations_4k)
         num_frames_to_save = [int(x * save_ratio) for x in num_drone_frames]
-        output_dir = os.path.join(args.folder, "4k_annotations")
+        output_dir = os.path.join(args.folder, "4k_train")
 
-        startFromHere = False
+        startFromHere = True
         print("Extracting frames from video sequences and converting to yolo format.")
         for (num_frames, filename) in zip(num_frames_to_save, annotations_4k):
             fname = os.path.basename(filename).split(".")[0]
@@ -428,5 +448,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+
+    # Example usage:
+    base = "/home/joakim/data_review/drone-vs-birds/"
+    folder1_path = '4k_annotations'
+    folder2_path = 'yolo_annotations'
+
+    common_files_list = get_common_files(os.path.join(base, folder1_path), os.path.join(base, folder2_path))
+
+    print(f"Common Files count: {len(common_files_list)}")
+    for file_name in common_files_list:
+        print(file_name)
+
+    # Example usage:
+    folder_path_to_delete_from = os.path.join(base, folder2_path)
+    #delete_files_in_list(folder_path_to_delete_from, common_files_list)
 
