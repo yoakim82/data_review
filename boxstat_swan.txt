@@ -1,0 +1,8 @@
+vtol_nerf_batches/world_0_drones_1/out_bbox
+vtol_nerf_batches/world_1_drones_1/out_bbox
+vtol_nerf_batches/world_2_drones_1/out_bbox
+vtol_nerf_batches/world_3_drones_1/out_bbox
+vtol_nerf_batches/world_4_drones_1/out_bbox
+vtol_nerf_batches/world_5_drones_1/out_bbox
+vtol_nerf_batches/world_6_drones_1/out_bbox
+vtol_nerf_batches/world_7_drones_1/out_bbox

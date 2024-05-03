@@ -1,3 +1,4 @@
+import argparse
 import os
 import tkinter as tk
 from PIL import Image, ImageTk
@@ -6,7 +7,7 @@ import pathlib
 import json
 
 class ImageRemovalApp:
-    def __init__(self, root):
+    def __init__(self, root, folder):
         self.flaggedforDelete = []
         self.root = root
         self.root.title("Image Removal Tool")
@@ -20,7 +21,7 @@ class ImageRemovalApp:
         self.current_index = 0
         self.script_file_name = "delete_script.sh"  # Default script file name
 
-        self.load_image_paths(folder='new_batches/world_0_drones_1')
+        self.load_image_paths(folder=folder) #new_batches/world_0_drones_1')
         self.load_images()
 
         self.create_gui()
@@ -235,6 +236,10 @@ class ImageRemovalApp:
         self.batch_add_deletions()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Convert annotation files to YOLO format and split the dataset.")
+    parser.add_argument("--folder", required=True, help="Path to the folder containing 'out_rgb' and 'out_bbox'.")
+    args = parser.parse_args()
+
     root = tk.Tk()
-    app = ImageRemovalApp(root)
+    app = ImageRemovalApp(root, args.folder)
     root.mainloop()

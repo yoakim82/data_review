@@ -151,14 +151,14 @@ class VideoAnnotationApp:
 
     def step_backward(self, event):
         if self.current_frame is not None and self.current_frame > 0:
-            self.current_frame -= 10
+            self.current_frame -= 5
             if self.current_frame < 0:
                 self.current_frame = 0
             self.seek_frame()
 
     def step_forward(self, event):
         if self.current_frame is not None:
-            self.current_frame += 20
+            self.current_frame += 5
             self.seek_frame()
 
     def set_class(self, class_id):
@@ -234,11 +234,7 @@ class VideoAnnotationApp:
         # Store the annotation in the list
         annotation = f"{self.current_class} {x} {y} {w} {h}"
         # self.annotation_boxes.append(annotation)
-        if not self.annotated_boxes.get(self.current_frame, False):
-            #add key to dict and start the list
-            self.annotated_boxes[self.current_frame] = [annotation]
-        else:
-            self.annotated_boxes[self.current_frame].append(annotation)
+        self.annotated_boxes[self.current_frame].append(annotation)
 
         # Draw the bounding box on the canvas
         self.draw_boxes_on_canvas()
@@ -286,8 +282,6 @@ class VideoAnnotationApp:
         if self.current_file:
             state_file.write(f"VideoPath:{self.current_file}\n")
             state_file.write(f"FramePos:{self.current_frame}\n")
-            state_file.write(f"Output_folder:{self.output_folder}\n")
-
 
         with open(f"{self.current_file}.json", "w") as file:
             file.write(json.dumps(self.annotated_boxes))
@@ -308,11 +302,6 @@ class VideoAnnotationApp:
                 key, value = line.strip().split(":")
                 state[key] = value
 
-            if 'Output_folder' in state:
-                # self.current_file = state['VideoPath']
-                self.output_folder = state['Output_folder']
-                self.output_folder_entry.insert(0, self.output_folder)
-
             if 'VideoPath' in state:
                 # self.current_file = state['VideoPath']
                 self.open_stream(state['VideoPath'])
@@ -327,6 +316,10 @@ class VideoAnnotationApp:
 
         self.root.mainloop()
 
+
+def save_annotation_and_frame(video_file, frame_num, annotation_box):
+    # Implement this function to save annotation and frame
+    pass
 
 
 if __name__ == "__main__":

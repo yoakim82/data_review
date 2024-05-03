@@ -460,11 +460,10 @@ def main():
         #append_dataset_yaml(args.experiment_name, dataset_file_name)
 
 
-if __name__ == "__main__":
-    #main()
 
+def dvb_yolo_doublettes():
     # Example usage:
-    base = "/home/joakim/data_review/drone-vs-birds/"
+    base = "/home/lxc/stjoly/datasets/viser/drone-vs-birds/"
     folder1_path = '4k_annotations'
     folder2_path = 'yolo_annotations'
 
@@ -476,5 +475,7 @@ if __name__ == "__main__":
 
     # Example usage:
     folder_path_to_delete_from = os.path.join(base, folder2_path)
-    #delete_files_in_list(folder_path_to_delete_from, common_files_list)
+    delete_files_in_list(folder_path_to_delete_from, common_files_list)
 
+if __name__ == "__main__":
+    main()
