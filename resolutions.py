@@ -1,5 +1,5 @@
 import os
-from moviepy.editor import VideoFileClip
+from moviepy import *
 
 def get_video_resolutions(folder_path):
     with open("resolutions.txt", "w") as output_file:
