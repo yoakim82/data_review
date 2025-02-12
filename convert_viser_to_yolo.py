@@ -4,9 +4,15 @@ import random
 import argparse
 import json
 from glob import glob
+
+import cv2
 import yaml
+from tqdm import tqdm
+
 #import cv2
 #from tqdm import tqdm
+
+import resolutions
 
 
 def create_yolo_labels_folder(folder):
@@ -412,12 +418,12 @@ def main():
 
     elif args.source == "drone-vs-birds":
         save_ratio = 0.35
-        exp_name = f"drone_vs_birds_{args.shift}"
+        exp_name = f"drone_vs_birds"
         #partition_dataset(args.folder, train_list, val_list, test_list, exp_name)
 
         data_folder = os.path.join(args.folder, "train_videos")
         annotation_folder = os.path.join(args.folder, "annotations")
-        annotations_4k = resolutions.extract_by_width("resolutions.txt", 3840)
+        annotations_4k = resolutions.extract_by_width("resolutions.txt", 0)
         annotations_4k = [os.path.join(annotation_folder, a) for a in annotations_4k]
         #annotations_hd = resolutions.extract_by_width("resolutions.txt", 1920)
 
@@ -439,7 +445,7 @@ def main():
                                               annotation_folder=annotation_folder,
                                               output_dir=output_dir,
                                               num_frames_to_save=num_frames,
-                                              scale=0.5)
+                                              scale=1.0)
 
             file_paths = glob(os.path.join(output_dir, "*.png"))
             with open(os.path.join(args.folder, f"{exp_name}.txt"), "w") as test_file:

@@ -1,5 +1,5 @@
 import os
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 
 def get_video_resolutions(folder_path):
     with open("resolutions.txt", "w") as output_file:
@@ -25,7 +25,6 @@ def get_video_metrics(folder_path, filename):
         print("Invalid folder path. Please provide a valid path to a directory containing video files.")
 
 
-#get_video_metrics(folder_path, filename)
 
 def extract_by_width(file_path, specific_width):
     matching_entries = []
@@ -38,17 +37,19 @@ def extract_by_width(file_path, specific_width):
             #change filename from video file to annotation file
             new_filename = '.'.join(filename.split('.')[:-1]) + '.txt'
             #width, height = resolution.split('x')
-            if int(width) == specific_width:
+            if int(width) == specific_width or specific_width == 0:
                 matching_entries.append(new_filename)
 
     return matching_entries
 
 
-folder_path = "/home/joakim/data_review/drone-vs-birds/train_videos/"
+folder_path = "/home/joakim/data/challenge/train_videos/"
 filename = "resolutions.txt"
 
-videos_4k = extract_by_width(filename, 3840)
-videos_hd = extract_by_width(filename, 1920)
+get_video_metrics(folder_path, filename)
 
-print(f"4K videos:")
-print(videos_4k)
+#videos_4k = extract_by_width(filename, 3840)
+#videos_hd = extract_by_width(filename, 1920)
+
+#print(f"4K videos:")
+#print(videos_4k)
